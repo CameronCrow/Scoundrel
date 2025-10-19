@@ -10,16 +10,22 @@ class ScoundrelGame:
         self.weapon = None
         self.room = DeckOfCards([], True)
         self.can_run = True
+        self.discard_face_reds()
+        
+        
+    def discard_face_reds(self):
         to_discard = []
-        for i in range(self.deck.deck.size):
-            card = self.deck.deck.items()[i]
-            if (card.suit == "Hearts" or card.suit == "Diamonds") and (card.rank > 10):
-                to_discard.append(i)
-        for i in to_discard:
-            card = self.deck.deck.discard(i)
+        for card in self.deck.deck.deck:
+            if (card.suit == "Hearts" or card.suit == "Diamonds") and (card.rank > 10 or card.rank == 1):
+                to_discard.append(card)
+                print(f"Discard {card}")
+        for card in to_discard:
+            print(f"Discarding {card}")
+            self.deck.deck.discard(card)
+            
     
     def update_room(self):
-        if self.room.size <= 1:
+        if self.room.size() <= 1:
             self.refill_room()
     
     def run_from_room(self):
@@ -34,14 +40,17 @@ class ScoundrelGame:
         self.refill_room()
         
     def reset_room(self):
-        while self.room.size > 0: # send room to bottom of deck
-            self.deck.deck.add(self.room.discard("top"), "bottom")
+        print("Sending room to bottom of deck")
+        while self.room.size() > 0: # send room to bottom of deck
+            print(f"Room size: {self.room.size()}")
+            self.deck.deck.add(self.room.discard(), "bottom")
                 
-        while self.room.size < 4:
+        print("drawing into a new room")
+        while self.room.size() < 4:
             self.room.add(self.deck.deck.draw("top"), "top")
     
     def refill_room(self):
-        while self.room.size < 4:
+        while self.room.size() < 4:
             self.room.add(self.deck.deck.draw("top"))
     
     def take_damage(self, amount):
@@ -51,7 +60,7 @@ class ScoundrelGame:
         self.health += amount
         
     def attack_enemy(self, room_index = -1, weapon = None):
-        enemy = self.room.discard(None, room_index)
+        enemy = self.room.discard(None, None, room_index)
         try:
             assert(enemy.suit == "Spades" or enemy.suit == "Clubs")
         except AssertionError:
@@ -70,7 +79,7 @@ class ScoundrelGame:
         return barehanded, damage_taken
     
     def equip_weapon(self, room_index):
-        card = self.room.discard(None, room_index)
+        card = self.room.discard(None, None, room_index)
         try:
             assert(card.suit == "Diamonds")
         except AssertionError:
@@ -81,22 +90,22 @@ class ScoundrelGame:
         self.weapon = self.Weapon(card, card.rank)
     
     def heal_with(self, room_index):
-        card = self.room.discard(None, room_index)
+        heal_card = self.room.discard(None, None, room_index)
         try:
-            assert(card.suit == "Hearts")
+            assert(heal_card.suit == "Hearts")
         except AssertionError:
             print("Card is not a heart!")
-        heal_amount = card.rank
-        self.room.discard.add(self.weapon.card, "top")
+        heal_amount = heal_card.rank
+        self.deck.discard.add(heal_card, "top")
         self.heal(heal_amount)
     
     def heal(self, heal_amount):
         self.health += heal_amount
         self.health = min(self.health, 20)
         
-    def status_str(self):
+    def status_str(self) -> str:
         status_str = f"Health: {self.health}\n"
-        status_str += f"Cards left in deck: {self.deck.deck.size}\n"
+        status_str += f"Cards left in deck: {self.deck.deck.size()}\n"
         if self.weapon:
             status_str += f"Weapon: {self.weapon.card}\n"
             status_str += f"  Power = {self.weapon.power}\n"
@@ -106,20 +115,30 @@ class ScoundrelGame:
         status_str += "Room:\n"
         status_str += self.room.to_string()
         return status_str
-        
+    
+    def room_status_str(self) -> str:
+        room_status_str = "Room:\n"
+        room_status_str += f"{self.room.to_string()}\n"
+        return room_status_str
+    
+    def can_use_weapon(self, enemy) -> bool:
+        if self.weapon != None:
+            if self.weapon.max >= enemy.rank:
+                return True
+        return False
         
     class Weapon:
         def __init__(self, card, max = 14):
             self.card = card
-            self.max = max
+            self.max = 14
             self.power = card.rank
             
         def use(self, target):
-            barehanded = False
+            barehanded = True
             if target.rank < self.max:
                 self.max = target.rank
-                barehanded = True
-                return barehanded, self.power - target.rank
+                barehanded = False
+                return barehanded, target.rank - self.power
             else:
                 return barehanded, target.rank
         
@@ -160,17 +179,15 @@ def main():
                     print("You cannot run right now!")
                     
             elif choice == "3":
-                if game.room.size == 0:
+                if game.room.size() == 0:
                     print("Room is empty!")
                     continue
                     
-                print("\nCards in room:")
-                for i, card in enumerate(game.room.deck.items()):
-                    print(f"{i}: {card}")
+                print(game.room_status_str())
                 
                 try:
-                    index = int(input("Select card index to equip as weapon: "))
-                    if 0 <= index < game.room.size:
+                    index = int(input("Select card index (0-3) to equip as weapon: "))
+                    if 0 <= index < game.room.size():
                         game.equip_weapon(index)
                         print(f"Equipped weapon!")
                     else:
@@ -179,22 +196,28 @@ def main():
                     print("Please enter a valid number!")
                     
             elif choice == "4":
-                if game.room.size == 0:
+                if game.room.size() == 0:
                     print("Room is empty!")
                     continue
                     
-                print("\nCards in room:")
-                for i, card in enumerate(game.room.deck.items()):
-                    print(f"{i}: {card}")
+                print(game.room_status_str())
                 
                 try:
                     index = int(input("Select enemy to attack: "))
-                    if 0 <= index < game.room.size:
-                        barehanded, damage = game.attack_enemy(index, game.weapon)
+                    enemy = game.deck.deck.get_card(index)
+                    weapon_to_use = game.weapon
+                    if game.can_use_weapon(enemy):
+                        barehanded_in = None
+                        barehanded_in = input("Attack barehanded or with a weapon? (y/n)").strip()
+                        barehanded = bool(str.lower(barehanded_in) == 'y')
                         if barehanded:
-                            print(f"Attacked with bare hands! Took {damage} damage.")
+                            weapon_to_use = None
+                    if 0 <= index < game.room.size():
+                        barehanded, damage = game.attack_enemy(index, weapon_to_use)
+                        if barehanded:
+                            print(f"Attacked {enemy} with bare hands! Took {damage} damage.")
                         else:
-                            print(f"Attacked with weapon! Took {damage} damage.")
+                            print(f"Attacked {enemy} with {game.weapon.card}! Took {damage} damage.")
                         game.update_room()
                     else:
                         print("Invalid index!")
@@ -202,17 +225,15 @@ def main():
                     print("Please enter a valid number!")
                     
             elif choice == "5":
-                if game.room.size == 0:
+                if game.room.size() == 0:
                     print("Room is empty!")
                     continue
                     
-                print("\nCards in room:")
-                for i, card in enumerate(game.room.deck.items()):
-                    print(f"{i}: {card}")
+                print(game.room_status_str())
                 
                 try:
                     index = int(input("Select heart card to heal with: "))
-                    if 0 <= index < game.room.size:
+                    if 0 <= index < game.room.size():
                         game.heal_with(index)
                         print("Healed!")
                         game.update_room()

@@ -17,7 +17,7 @@ class Card:
         return f"{self.face_name} of {self.suit}"
         
     def to_string_debug(self): # add more object info here if necessary
-        print(f"{self.face_name} of {self.suit}")
+        return f"{self.face_name} of {self.suit}"
         
     def get_face_name(self):
         match self.rank:
@@ -32,3 +32,8 @@ class Card:
             case _: # face name is the number if 2-10
                 return self.rank
     
+    def equals(self, card) -> bool:
+        if (self.rank == card.rank and self.face_name == card.face_name):
+            return True
+        else:
+            return False

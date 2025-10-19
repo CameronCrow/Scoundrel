@@ -7,14 +7,13 @@ import random
 class PlayingDeck:
     def __init__(self, card_dict = None):
         self.deck = DeckOfCards(card_dict)
-        self.discard = DeckOfCards(True)
-        self.hand = DeckOfCards(True)
+        self.discard = DeckOfCards(None, True)
+        self.hand = DeckOfCards(None, True)
 
 
 class DeckOfCards:
     def __init__(self, card_dict = None, empty_deck = False):
         self.deck = self.deck_builder(card_dict, empty_deck)
-        self.size = 0
         
     def deck_builder(self, card_dict = None, empty_deck = False):
         # scenarios
@@ -32,7 +31,6 @@ class DeckOfCards:
                 for _ in range(count):
                     new_card = Card(card.rank, card.suit)
                     deck.append(new_card)
-                    self.size += 1
         
         # 3: default deck
         else:
@@ -40,14 +38,17 @@ class DeckOfCards:
             for suit in suits:
                 for rank in range(1, 14):
                     deck.append(Card(rank, suit))   
-                    
+        
         return deck
     
     def to_string(self) -> str:
         rep = ""
-        for card in self.deck.items():
+        for card in self.deck:
             rep += (f"{card}\n")
         return rep
+    
+    def size(self):
+        return len(self.deck)
     
     def shuffle(self):
         temp_list = list(self.deck)
@@ -55,54 +56,64 @@ class DeckOfCards:
         self.deck = deque(temp_list)
     
     def draw(self, location = "top", index = None) -> Card:
-        location = str.lower(location)
+        if location != None:
+            location = str.lower(location)
         match location:
             case "top":
-                self.size -= 1
                 return self.draw_top()
             case "bottom":
-                self.size -= 1
                 return self.draw_bottom()
             case "random":
-                self.size -= 1
                 return self.draw_random()
             case _:
                 try: 
                     assert(index != None)
-                    self.size -= 1
                     return self.draw_index(index)
                 except AssertionError:
                     print("No location or index provided for "
                             "DeckOfCards.add().")
+                    
+    def get_card(self, index):
+        if self.size() == 0:
+            return None
+        return self.deck[index]
 
-    def discard(self, location = "top", index = None) -> Card:
+    # problem with this function
+    def discard(self, card_to_discard = None, location = "top", index = None) -> Card:
         card = None
-        try:
+        if card_to_discard != None:
+            card = self.discard_card(card_to_discard)
+        else:
             card = self.draw(location, index)
-        except AssertionError:
-            print("No location or index provided for "
-                  " DeckOfCards.dicard().")
         return card
+    
+    def discard_card(self, card):
+        i = 0
+        for curr_card in self.deck:
+            if curr_card.equals(card):
+                return self.draw_index(i)
+            i += 1
+        return None
 
     def draw_top(self) -> Card:
-        if self.size == 0:
+        if self.size() == 0:
             return None
         return self.deck.popleft()
         
     def draw_bottom(self) -> Card:
-        if self.size == 0:
+        if self.size() == 0:
             return None
         return self.deck.pop()
     
     def draw_index(self, index) -> Card:
-        if self.size == 0:
+        if self.size() == 0:
             return None
         card = self.deck[index]
         del self.deck[index]
         return card
     
     def draw_random(self) -> Card:
-        if len(self.deck) == 0:
+        if self.size() == 0:
             return None
         rand_index = random.randrange(len(self.deck))
         rand_card = self.deck[rand_index]
@@ -110,23 +121,19 @@ class DeckOfCards:
         return rand_card
     
     def add(self, card, location = "top", index = None):
-        location = str.lower(location)
+        if location:
+            location = str.lower(location)
         match location:
             case "top":
-                self.size += 1
-                self.deck.append(card)
-            case "bottom":
-                self.size += 1
                 self.deck.insert(0, card)
+            case "bottom":
+                self.deck.append(card)
             case _:
                 try: 
                     assert(index != None)
-                    self.size += 1
                     self.deck.insert(index, card)
                 except AssertionError:
                     print("No location or index provided for "
                           "DeckOfCards.add().")
-
-        
-        
+                
     
