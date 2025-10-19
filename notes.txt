@@ -1,0 +1,22 @@
+Need:
+- Deque
+
+
+Deck controller
+- DeckOfCards
+- shuffle
+- draw from top
+- draw from bottom
+- draw random
+- change deck art
+
+DeckOfCards
+-- vars
+- deque of card objects
+- ref to deck art
+- amount of each card
+
+Card
+- Rank: int
+- Suit: str
+- Card art: file ref
