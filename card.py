@@ -32,8 +32,13 @@ class Card:
             case _: # face name is the number if 2-10
                 return self.rank
     
-    def equals(self, card) -> bool:
-        if (self.rank == card.rank and self.face_name == card.face_name):
+    def equals(self, other) -> bool:
+        if other == None:
+            return False
+        if (self.rank == other.rank and self.face_name == other.face_name and self.suit == other.suit):
             return True
         else:
             return False
+        
+    def __eq__(self, other):
+        return self.equals(other)

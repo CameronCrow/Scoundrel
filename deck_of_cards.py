@@ -41,6 +41,12 @@ class DeckOfCards:
         
         return deck
     
+    # default 52 card deck init uses ace low
+    def ace_high(self):
+        for card in self.deck:
+            if card.rank == 1:
+                card.rank = 14
+    
     def to_string(self) -> str:
         rep = ""
         for card in self.deck:
@@ -87,10 +93,10 @@ class DeckOfCards:
             card = self.draw(location, index)
         return card
     
-    def discard_card(self, card):
+    def discard_card(self, card) -> Card:
         i = 0
         for curr_card in self.deck:
-            if curr_card.equals(card):
+            if curr_card == card:
                 return self.draw_index(i)
             i += 1
         return None
